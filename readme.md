@@ -1,5 +1,7 @@
 # duration
 
+[![Go Reference](https://pkg.go.dev/badge/github.com/sosodev/duration.svg)](https://pkg.go.dev/github.com/sosodev/duration)
+
 It's a Go module for parsing [ISO 8601 durations](https://en.wikipedia.org/wiki/ISO_8601#Durations) and converting them to the often much more useful `time.Duration`.
 
 ## why?
