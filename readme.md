@@ -45,7 +45,7 @@ func main() {
 
 ## correctness
 
-This module aims to implement the ISO8601 duration specification correctly. It properly supports fractional units and has unit tests
+This module aims to implement the ISO 8601 duration specification correctly. It properly supports fractional units and has unit tests
 that assert the correctness of it's parsing and conversion to a `time.Duration`.
 
 With that said durations with months or years specified will be converted to `time.Duration` with a little fuzziness. Since I
