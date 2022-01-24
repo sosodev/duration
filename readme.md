@@ -18,7 +18,7 @@ package main
 import (
 	"fmt"
 	"time"
-    "github.com/sosodev/duration"
+	"github.com/sosodev/duration"
 )
 
 func main() {
