@@ -12,7 +12,7 @@ ISO 8601 is a pretty common standard and sometimes these durations show up in th
 
 `go get github.com/sosodev/duration`
 
-## usage
+## [usage](https://go.dev/play/p/Nz5akjy1c6W)
 
 ```go
 package main
