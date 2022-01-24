@@ -22,10 +22,10 @@ import (
 )
 
 func main() {
-    d, err := duration.Parse("P3Y6M4DT12H30M5.5S")
+	d, err := duration.Parse("P3Y6M4DT12H30M5.5S")
 	if err != nil {
 		panic(err)
-    }
+	}
 	
 	fmt.Println(d.Years) // 3
 	fmt.Println(d.Months) // 6
@@ -37,7 +37,7 @@ func main() {
 	d, err = duration.Parse("T33.3S")
 	if err != nil {
 		panic(err)
-    }
+	}
 	
 	fmt.Println(d.ToTimeDuration() == time.Second*33+time.Millisecond*300) // true
 }
