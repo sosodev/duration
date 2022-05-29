@@ -2,22 +2,23 @@ package duration
 
 import (
 	"errors"
+	"fmt"
 	"math"
 	"strconv"
+	"strings"
 	"time"
 	"unicode"
 )
 
 // Duration holds all the smaller units that make up the duration
 type Duration struct {
-	originalString string
-	Years          float64
-	Months         float64
-	Weeks          float64
-	Days           float64
-	Hours          float64
-	Minutes        float64
-	Seconds        float64
+	Years   float64
+	Months  float64
+	Weeks   float64
+	Days    float64
+	Hours   float64
+	Minutes float64
+	Seconds float64
 }
 
 const (
@@ -34,9 +35,7 @@ var (
 // if parsing fails an error is returned instead
 func Parse(d string) (*Duration, error) {
 	state := parsingPeriod
-	duration := &Duration{
-		originalString: d,
-	}
+	duration := &Duration{}
 	num := ""
 	var err error
 
@@ -143,5 +142,47 @@ func (duration *Duration) ToTimeDuration() time.Duration {
 
 // String returns the duration string from which the *Duration was parsed
 func (duration *Duration) String() string {
-	return duration.originalString
+	d := ""
+
+	appendD := func(designator string, value float64, isTime bool) {
+		if !strings.Contains(d, "P") && !isTime {
+			d += "P"
+		}
+
+		if !strings.Contains(d, "T") && isTime {
+			d += "T"
+		}
+
+		d += fmt.Sprintf("%s%s", strconv.FormatFloat(value, 'f', -1, 64), designator)
+	}
+
+	if duration.Years != 0 {
+		appendD("Y", duration.Years, false)
+	}
+
+	if duration.Months != 0 {
+		appendD("M", duration.Months, false)
+	}
+
+	if duration.Weeks != 0 {
+		appendD("W", duration.Weeks, false)
+	}
+
+	if duration.Days != 0 {
+		appendD("D", duration.Days, false)
+	}
+
+	if duration.Hours != 0 {
+		appendD("H", duration.Hours, true)
+	}
+
+	if duration.Minutes != 0 {
+		appendD("M", duration.Minutes, true)
+	}
+
+	if duration.Seconds != 0 {
+		appendD("S", duration.Seconds, true)
+	}
+
+	return d
 }

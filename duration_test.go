@@ -20,8 +20,7 @@ func TestParse(t *testing.T) {
 			name: "period-only",
 			args: args{d: "P4Y"},
 			want: &Duration{
-				originalString: "P4Y",
-				Years:          4,
+				Years: 4,
 			},
 			wantErr: false,
 		},
@@ -29,8 +28,7 @@ func TestParse(t *testing.T) {
 			name: "time-only-decimal",
 			args: args{d: "T2.5S"},
 			want: &Duration{
-				originalString: "T2.5S",
-				Seconds:        2.5,
+				Seconds: 2.5,
 			},
 			wantErr: false,
 		},
@@ -38,13 +36,12 @@ func TestParse(t *testing.T) {
 			name: "full",
 			args: args{d: "P3Y6M4DT12H30M5.5S"},
 			want: &Duration{
-				originalString: "P3Y6M4DT12H30M5.5S",
-				Years:          3,
-				Months:         6,
-				Days:           4,
-				Hours:          12,
-				Minutes:        30,
-				Seconds:        5.5,
+				Years:   3,
+				Months:  6,
+				Days:    4,
+				Hours:   12,
+				Minutes: 30,
+				Seconds: 5.5,
 			},
 			wantErr: false,
 		},
@@ -142,5 +139,20 @@ func TestDuration_String(t *testing.T) {
 
 	if duration.String() != "P3Y6M4DT12H30M5.5S" {
 		t.Errorf("expected: %s, got: %s", "P3Y6M4DT12H30M5.5S", duration.String())
+	}
+
+	duration.Seconds = 33.3333
+
+	if duration.String() != "P3Y6M4DT12H30M33.3333S" {
+		t.Errorf("expected: %s, got: %s", "P3Y6M4DT12H30M33.3333S", duration.String())
+	}
+
+	smolDuration, err := Parse("T0.0000000000001S")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if smolDuration.String() != "T0.0000000000001S" {
+		t.Errorf("expected: %s, got: %s", "T0.0000000000001S", smolDuration.String())
 	}
 }
