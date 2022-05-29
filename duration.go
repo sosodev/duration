@@ -140,7 +140,7 @@ func (duration *Duration) ToTimeDuration() time.Duration {
 	return timeDuration
 }
 
-// String returns the duration string from which the *Duration was parsed
+// String returns the ISO8601 duration string for the *Duration
 func (duration *Duration) String() string {
 	d := ""
 
