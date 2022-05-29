@@ -10,13 +10,14 @@ import (
 
 // Duration holds all the smaller units that make up the duration
 type Duration struct {
-	Years   float64
-	Months  float64
-	Weeks   float64
-	Days    float64
-	Hours   float64
-	Minutes float64
-	Seconds float64
+	originalString string
+	Years          float64
+	Months         float64
+	Weeks          float64
+	Days           float64
+	Hours          float64
+	Minutes        float64
+	Seconds        float64
 }
 
 const (
@@ -33,7 +34,9 @@ var (
 // if parsing fails an error is returned instead
 func Parse(d string) (*Duration, error) {
 	state := parsingPeriod
-	duration := &Duration{}
+	duration := &Duration{
+		originalString: d,
+	}
 	num := ""
 	var err error
 
@@ -136,4 +139,9 @@ func (duration *Duration) ToTimeDuration() time.Duration {
 	timeDuration += time.Duration(math.Round(duration.Seconds * 1e+9))
 
 	return timeDuration
+}
+
+// String returns the duration string from which the *Duration was parsed
+func (duration *Duration) String() string {
+	return duration.originalString
 }
