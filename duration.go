@@ -142,13 +142,9 @@ func (duration *Duration) ToTimeDuration() time.Duration {
 
 // String returns the ISO8601 duration string for the *Duration
 func (duration *Duration) String() string {
-	d := ""
+	d := "P"
 
 	appendD := func(designator string, value float64, isTime bool) {
-		if !strings.Contains(d, "P") && !isTime {
-			d += "P"
-		}
-
 		if !strings.Contains(d, "T") && isTime {
 			d += "T"
 		}

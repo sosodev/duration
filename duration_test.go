@@ -152,7 +152,7 @@ func TestDuration_String(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if smolDuration.String() != "T0.0000000000001S" {
-		t.Errorf("expected: %s, got: %s", "T0.0000000000001S", smolDuration.String())
+	if smolDuration.String() != "PT0.0000000000001S" {
+		t.Errorf("expected: %s, got: %s", "PT0.0000000000001S", smolDuration.String())
 	}
 }
