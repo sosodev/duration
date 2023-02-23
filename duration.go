@@ -122,6 +122,51 @@ func Parse(d string) (*Duration, error) {
 	return duration, nil
 }
 
+// Format formats the given duration into a ISO 8601 duration string (e.g. P1DT6H5M)
+func Format(d time.Duration) string {
+	neg := false
+	if d < 0 {
+		neg = true
+		d = -d
+	}
+
+	if d == 0 {
+		return "PT0S"
+	}
+
+	duration := &Duration{}
+	if d.Hours() >= 8760 {
+		duration.Years = math.Floor(d.Hours() / 8760)
+		d -= time.Duration(duration.Years) * time.Hour * 8760
+	}
+	if d.Hours() >= 730 {
+		duration.Months = math.Floor(d.Hours() / 730)
+		d -= time.Duration(duration.Months) * time.Hour * 730
+	}
+	if d.Hours() >= 168 {
+		duration.Weeks = math.Floor(d.Hours() / 168)
+		d -= time.Duration(duration.Weeks) * time.Hour * 168
+	}
+	if d.Hours() >= 24 {
+		duration.Days = math.Floor(d.Hours() / 24)
+		d -= time.Duration(duration.Days) * time.Hour * 24
+	}
+	if d.Hours() >= 1 {
+		duration.Hours = math.Floor(d.Hours())
+		d -= time.Duration(duration.Hours) * time.Hour
+	}
+	if d.Minutes() >= 1 {
+		duration.Minutes = math.Floor(d.Minutes())
+		d -= time.Duration(duration.Minutes) * time.Minute
+	}
+	duration.Seconds = d.Seconds()
+
+	if neg {
+		return "-" + duration.String()
+	}
+	return duration.String()
+}
+
 // ToTimeDuration converts the *Duration to the standard library's time.Duration
 // note that for *Duration's with period values of a month or year that the duration becomes a bit fuzzy
 // since obviously those things vary month to month and year to year
@@ -129,13 +174,27 @@ func Parse(d string) (*Duration, error) {
 func (duration *Duration) ToTimeDuration() time.Duration {
 	var timeDuration time.Duration
 
-	timeDuration += time.Duration(math.Round(duration.Years * 3.154e+16))
-	timeDuration += time.Duration(math.Round(duration.Months * 2.628e+15))
-	timeDuration += time.Duration(math.Round(duration.Weeks * 6.048e+14))
-	timeDuration += time.Duration(math.Round(duration.Days * 8.64e+13))
-	timeDuration += time.Duration(math.Round(duration.Hours * 3.6e+12))
-	timeDuration += time.Duration(math.Round(duration.Minutes * 6e+10))
-	timeDuration += time.Duration(math.Round(duration.Seconds * 1e+9))
+	if duration.Years != 0 {
+		timeDuration += time.Duration(math.Round(duration.Years * 3.154e+16))
+	}
+	if duration.Months != 0 {
+		timeDuration += time.Duration(math.Round(duration.Months * 2.628e+15))
+	}
+	if duration.Weeks != 0 {
+		timeDuration += time.Duration(math.Round(duration.Weeks * 6.048e+14))
+	}
+	if duration.Days != 0 {
+		timeDuration += time.Duration(math.Round(duration.Days * 8.64e+13))
+	}
+	if duration.Hours != 0 {
+		timeDuration += time.Duration(math.Round(duration.Hours * 3.6e+12))
+	}
+	if duration.Minutes != 0 {
+		timeDuration += time.Duration(math.Round(duration.Minutes * 6e+10))
+	}
+	if duration.Seconds != 0 {
+		timeDuration += time.Duration(math.Round(duration.Seconds * 1e+9))
+	}
 
 	return timeDuration
 }

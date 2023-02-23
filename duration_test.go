@@ -60,6 +60,50 @@ func TestParse(t *testing.T) {
 	}
 }
 
+func TestFormat(t *testing.T) {
+	tests := []struct {
+		give time.Duration
+		want string
+	}{
+		{
+			give: 0,
+			want: "PT0S",
+		},
+		{
+			give: time.Minute * 94,
+			want: "PT1H34M",
+		},
+		{
+			give: time.Hour * 72,
+			want: "P3D",
+		},
+		{
+			give: time.Hour * 26,
+			want: "P1DT2H",
+		},
+		{
+			give: time.Second * 465461651,
+			want: "P14Y9M3DT12H54M11S",
+		},
+		{
+			give: -time.Hour * 99544,
+			want: "-P11Y4M1W4D",
+		},
+		{
+			give: -time.Second * 10,
+			want: "-PT10S",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.want, func(t *testing.T) {
+			got := Format(tt.give)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Format() got = %s, want %s", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestDuration_ToTimeDuration(t *testing.T) {
 	type fields struct {
 		Years   float64
