@@ -42,9 +42,11 @@ const (
 var (
 	// ErrUnexpectedInput is returned when an input in the duration string does not match expectations
 	ErrUnexpectedInput = errors.New("unexpected input")
+	// ErrUnexpectedNegative is returned when an input duration is negative
+	ErrUnexpectedNegative = errors.New("duration must be positive")
 )
 
-// Parse attempts to parse the given duration string into a *Duration
+// Parse attempts to parse the given duration string into a *Duration,
 // if parsing fails an error is returned instead
 func Parse(d string) (*Duration, error) {
 	state := parsingPeriod
@@ -135,19 +137,19 @@ func Parse(d string) (*Duration, error) {
 	return duration, nil
 }
 
-// Format formats the given duration into a ISO 8601 duration string (e.g. P1DT6H5M)
-func Format(d time.Duration) string {
-	neg := false
+// FromTimeDuration converts the given time.Duration into duration.Duration.
+// Note that for *Duration's with period values of a month or year that the duration becomes a bit fuzzy
+// since obviously those things vary month to month and year to year
+func FromTimeDuration(d time.Duration) (*Duration, error) {
 	if d < 0 {
-		neg = true
-		d = -d
-	}
-
-	if d == 0 {
-		return "PT0S"
+		return nil, ErrUnexpectedNegative
 	}
 
 	duration := &Duration{}
+	if d == 0 {
+		return duration, nil
+	}
+
 	if d.Hours() >= hoursPerYear {
 		duration.Years = math.Floor(d.Hours() / hoursPerYear)
 		d -= time.Duration(duration.Years) * nsPerYear
@@ -173,17 +175,30 @@ func Format(d time.Duration) string {
 		d -= time.Duration(duration.Minutes) * nsPerMinute
 	}
 	duration.Seconds = d.Seconds()
+	return duration, nil
+}
 
+// Format formats the given time.Duration into an ISO 8601 duration string (e.g. P1DT6H5M),
+// negative durations are prefixed with a minus sign, for a zero duration "PT0S" is returned.
+// Note that for *Duration's with period values of a month or year that the duration becomes a bit fuzzy
+// since obviously those things vary month to month and year to year
+func Format(d time.Duration) string {
+	neg := false
+	if d < 0 {
+		neg = true
+		d = -d
+	}
+
+	duration, _ := FromTimeDuration(d)
 	if neg {
 		return "-" + duration.String()
 	}
 	return duration.String()
 }
 
-// ToTimeDuration converts the *Duration to the standard library's time.Duration
-// note that for *Duration's with period values of a month or year that the duration becomes a bit fuzzy
+// ToTimeDuration converts the *Duration to the standard library's time.Duration.
+// Note that for *Duration's with period values of a month or year that the duration becomes a bit fuzzy
 // since obviously those things vary month to month and year to year
-// I used the values that Google's search provided me with as I couldn't find anything concrete on what they should be
 func (duration *Duration) ToTimeDuration() time.Duration {
 	var timeDuration time.Duration
 
@@ -250,6 +265,10 @@ func (duration *Duration) String() string {
 
 	if duration.Seconds != 0 {
 		appendD("S", duration.Seconds, true)
+	}
+
+	if d == "P" {
+		return "PT0S"
 	}
 
 	return d
