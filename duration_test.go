@@ -191,12 +191,12 @@ func TestDuration_String(t *testing.T) {
 		t.Errorf("expected: %s, got: %s", "P3Y6M4DT12H30M33.3333S", duration.String())
 	}
 
-	smolDuration, err := Parse("T0.0000000000001S")
+	smallDuration, err := Parse("T0.0000000000001S")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if smolDuration.String() != "PT0.0000000000001S" {
-		t.Errorf("expected: %s, got: %s", "PT0.0000000000001S", smolDuration.String())
+	if smallDuration.String() != "PT0.0000000000001S" {
+		t.Errorf("expected: %s, got: %s", "PT0.0000000000001S", smallDuration.String())
 	}
 }

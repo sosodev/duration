@@ -24,6 +24,19 @@ type Duration struct {
 const (
 	parsingPeriod = iota
 	parsingTime
+
+	hoursPerDay   = 24
+	hoursPerWeek  = hoursPerDay * 7
+	hoursPerMonth = hoursPerYear / 12
+	hoursPerYear  = hoursPerDay * 365
+
+	nsPerSecond = 1000000000
+	nsPerMinute = nsPerSecond * 60
+	nsPerHour   = nsPerMinute * 60
+	nsPerDay    = nsPerHour * hoursPerDay
+	nsPerWeek   = nsPerHour * hoursPerWeek
+	nsPerMonth  = nsPerHour * hoursPerMonth
+	nsPerYear   = nsPerHour * hoursPerYear
 )
 
 var (
@@ -135,29 +148,29 @@ func Format(d time.Duration) string {
 	}
 
 	duration := &Duration{}
-	if d.Hours() >= 8760 {
-		duration.Years = math.Floor(d.Hours() / 8760)
-		d -= time.Duration(duration.Years) * time.Hour * 8760
+	if d.Hours() >= hoursPerYear {
+		duration.Years = math.Floor(d.Hours() / hoursPerYear)
+		d -= time.Duration(duration.Years) * nsPerYear
 	}
-	if d.Hours() >= 730 {
-		duration.Months = math.Floor(d.Hours() / 730)
-		d -= time.Duration(duration.Months) * time.Hour * 730
+	if d.Hours() >= hoursPerMonth {
+		duration.Months = math.Floor(d.Hours() / hoursPerMonth)
+		d -= time.Duration(duration.Months) * nsPerMonth
 	}
-	if d.Hours() >= 168 {
-		duration.Weeks = math.Floor(d.Hours() / 168)
-		d -= time.Duration(duration.Weeks) * time.Hour * 168
+	if d.Hours() >= hoursPerWeek {
+		duration.Weeks = math.Floor(d.Hours() / hoursPerWeek)
+		d -= time.Duration(duration.Weeks) * nsPerWeek
 	}
-	if d.Hours() >= 24 {
-		duration.Days = math.Floor(d.Hours() / 24)
-		d -= time.Duration(duration.Days) * time.Hour * 24
+	if d.Hours() >= hoursPerDay {
+		duration.Days = math.Floor(d.Hours() / hoursPerDay)
+		d -= time.Duration(duration.Days) * nsPerDay
 	}
 	if d.Hours() >= 1 {
 		duration.Hours = math.Floor(d.Hours())
-		d -= time.Duration(duration.Hours) * time.Hour
+		d -= time.Duration(duration.Hours) * nsPerHour
 	}
 	if d.Minutes() >= 1 {
 		duration.Minutes = math.Floor(d.Minutes())
-		d -= time.Duration(duration.Minutes) * time.Minute
+		d -= time.Duration(duration.Minutes) * nsPerMinute
 	}
 	duration.Seconds = d.Seconds()
 
@@ -175,25 +188,25 @@ func (duration *Duration) ToTimeDuration() time.Duration {
 	var timeDuration time.Duration
 
 	if duration.Years != 0 {
-		timeDuration += time.Duration(math.Round(duration.Years * 3.154e+16))
+		timeDuration += time.Duration(math.Round(duration.Years * nsPerYear))
 	}
 	if duration.Months != 0 {
-		timeDuration += time.Duration(math.Round(duration.Months * 2.628e+15))
+		timeDuration += time.Duration(math.Round(duration.Months * nsPerMonth))
 	}
 	if duration.Weeks != 0 {
-		timeDuration += time.Duration(math.Round(duration.Weeks * 6.048e+14))
+		timeDuration += time.Duration(math.Round(duration.Weeks * nsPerWeek))
 	}
 	if duration.Days != 0 {
-		timeDuration += time.Duration(math.Round(duration.Days * 8.64e+13))
+		timeDuration += time.Duration(math.Round(duration.Days * nsPerDay))
 	}
 	if duration.Hours != 0 {
-		timeDuration += time.Duration(math.Round(duration.Hours * 3.6e+12))
+		timeDuration += time.Duration(math.Round(duration.Hours * nsPerHour))
 	}
 	if duration.Minutes != 0 {
-		timeDuration += time.Duration(math.Round(duration.Minutes * 6e+10))
+		timeDuration += time.Duration(math.Round(duration.Minutes * nsPerMinute))
 	}
 	if duration.Seconds != 0 {
-		timeDuration += time.Duration(math.Round(duration.Seconds * 1e+9))
+		timeDuration += time.Duration(math.Round(duration.Seconds * nsPerSecond))
 	}
 
 	return timeDuration
