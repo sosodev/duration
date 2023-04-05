@@ -2,23 +2,22 @@ package duration
 
 import (
 	"errors"
-	"fmt"
 	"math"
 	"strconv"
-	"strings"
 	"time"
 	"unicode"
 )
 
 // Duration holds all the smaller units that make up the duration
 type Duration struct {
-	Years   float64
-	Months  float64
-	Weeks   float64
-	Days    float64
-	Hours   float64
-	Minutes float64
-	Seconds float64
+	Years    float64
+	Months   float64
+	Weeks    float64
+	Days     float64
+	Hours    float64
+	Minutes  float64
+	Seconds  float64
+	Negative bool
 }
 
 const (
@@ -42,8 +41,6 @@ const (
 var (
 	// ErrUnexpectedInput is returned when an input in the duration string does not match expectations
 	ErrUnexpectedInput = errors.New("unexpected input")
-	// ErrUnexpectedNegative is returned when an input duration is negative
-	ErrUnexpectedNegative = errors.New("duration must be positive")
 )
 
 // Parse attempts to parse the given duration string into a *Duration,
@@ -56,6 +53,8 @@ func Parse(d string) (*Duration, error) {
 
 	for _, char := range d {
 		switch char {
+		case '-':
+			duration.Negative = true
 		case 'P':
 			state = parsingPeriod
 		case 'T':
@@ -140,14 +139,15 @@ func Parse(d string) (*Duration, error) {
 // FromTimeDuration converts the given time.Duration into duration.Duration.
 // Note that for *Duration's with period values of a month or year that the duration becomes a bit fuzzy
 // since obviously those things vary month to month and year to year
-func FromTimeDuration(d time.Duration) (*Duration, error) {
-	if d < 0 {
-		return nil, ErrUnexpectedNegative
-	}
-
+func FromTimeDuration(d time.Duration) *Duration {
 	duration := &Duration{}
 	if d == 0 {
-		return duration, nil
+		return duration
+	}
+
+	if d < 0 {
+		d = -d
+		duration.Negative = true
 	}
 
 	if d.Hours() >= hoursPerYear {
@@ -175,7 +175,8 @@ func FromTimeDuration(d time.Duration) (*Duration, error) {
 		d -= time.Duration(duration.Minutes) * nsPerMinute
 	}
 	duration.Seconds = d.Seconds()
-	return duration, nil
+
+	return duration
 }
 
 // Format formats the given time.Duration into an ISO 8601 duration string (e.g. P1DT6H5M),
@@ -183,17 +184,7 @@ func FromTimeDuration(d time.Duration) (*Duration, error) {
 // Note that for *Duration's with period values of a month or year that the duration becomes a bit fuzzy
 // since obviously those things vary month to month and year to year
 func Format(d time.Duration) string {
-	neg := false
-	if d < 0 {
-		neg = true
-		d = -d
-	}
-
-	duration, _ := FromTimeDuration(d)
-	if neg {
-		return "-" + duration.String()
-	}
-	return duration.String()
+	return FromTimeDuration(d).String()
 }
 
 // ToTimeDuration converts the *Duration to the standard library's time.Duration.
@@ -202,6 +193,7 @@ func Format(d time.Duration) string {
 func (duration *Duration) ToTimeDuration() time.Duration {
 	var timeDuration time.Duration
 
+	// zero checks are here to avoid unnecessary math operations, on a durations such as `PT5M`
 	if duration.Years != 0 {
 		timeDuration += time.Duration(math.Round(duration.Years * nsPerYear))
 	}
@@ -223,6 +215,9 @@ func (duration *Duration) ToTimeDuration() time.Duration {
 	if duration.Seconds != 0 {
 		timeDuration += time.Duration(math.Round(duration.Seconds * nsPerSecond))
 	}
+	if duration.Negative {
+		timeDuration = -timeDuration
+	}
 
 	return timeDuration
 }
@@ -230,13 +225,15 @@ func (duration *Duration) ToTimeDuration() time.Duration {
 // String returns the ISO8601 duration string for the *Duration
 func (duration *Duration) String() string {
 	d := "P"
+	hasTime := false
 
 	appendD := func(designator string, value float64, isTime bool) {
-		if !strings.Contains(d, "T") && isTime {
+		if !hasTime && isTime {
 			d += "T"
+			hasTime = true
 		}
 
-		d += fmt.Sprintf("%s%s", strconv.FormatFloat(value, 'f', -1, 64), designator)
+		d += strconv.FormatFloat(value, 'f', -1, 64) + designator
 	}
 
 	if duration.Years != 0 {
@@ -267,8 +264,13 @@ func (duration *Duration) String() string {
 		appendD("S", duration.Seconds, true)
 	}
 
+	// if the duration is zero, return "PT0S"
 	if d == "P" {
-		return "PT0S"
+		d += "T0S"
+	}
+
+	if duration.Negative {
+		return "-" + d
 	}
 
 	return d
