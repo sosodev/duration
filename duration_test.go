@@ -45,6 +45,15 @@ func TestParse(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "negative",
+			args: args{d: "-PT5M"},
+			want: &Duration{
+				Minutes:  5,
+				Negative: true,
+			},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -60,15 +69,94 @@ func TestParse(t *testing.T) {
 	}
 }
 
+func TestFromTimeDuration(t *testing.T) {
+	tests := []struct {
+		give time.Duration
+		want *Duration
+	}{
+		{
+			give: 0,
+			want: &Duration{},
+		},
+		{
+			give: time.Minute * 94,
+			want: &Duration{
+				Hours:   1,
+				Minutes: 34,
+			},
+		},
+		{
+			give: -time.Second * 10,
+			want: &Duration{
+				Seconds:  10,
+				Negative: true,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.give.String(), func(t *testing.T) {
+			got := FromTimeDuration(tt.give)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Format() got = %s, want %s", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestFormat(t *testing.T) {
+	tests := []struct {
+		give time.Duration
+		want string
+	}{
+		{
+			give: 0,
+			want: "PT0S",
+		},
+		{
+			give: time.Minute * 94,
+			want: "PT1H34M",
+		},
+		{
+			give: time.Hour * 72,
+			want: "P3D",
+		},
+		{
+			give: time.Hour * 26,
+			want: "P1DT2H",
+		},
+		{
+			give: time.Second * 465461651,
+			want: "P14Y9M3DT12H54M11S",
+		},
+		{
+			give: -time.Hour * 99544,
+			want: "-P11Y4M1W4D",
+		},
+		{
+			give: -time.Second * 10,
+			want: "-PT10S",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.want, func(t *testing.T) {
+			got := Format(tt.give)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Format() got = %s, want %s", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestDuration_ToTimeDuration(t *testing.T) {
 	type fields struct {
-		Years   float64
-		Months  float64
-		Weeks   float64
-		Days    float64
-		Hours   float64
-		Minutes float64
-		Seconds float64
+		Years    float64
+		Months   float64
+		Weeks    float64
+		Days     float64
+		Hours    float64
+		Minutes  float64
+		Seconds  float64
+		Negative bool
 	}
 	tests := []struct {
 		name   string
@@ -112,17 +200,26 @@ func TestDuration_ToTimeDuration(t *testing.T) {
 			},
 			want: time.Hour*24*7*12 + time.Hour*84,
 		},
+		{
+			name: "negative",
+			fields: fields{
+				Hours:    2,
+				Negative: true,
+			},
+			want: -time.Hour * 2,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			duration := &Duration{
-				Years:   tt.fields.Years,
-				Months:  tt.fields.Months,
-				Weeks:   tt.fields.Weeks,
-				Days:    tt.fields.Days,
-				Hours:   tt.fields.Hours,
-				Minutes: tt.fields.Minutes,
-				Seconds: tt.fields.Seconds,
+				Years:    tt.fields.Years,
+				Months:   tt.fields.Months,
+				Weeks:    tt.fields.Weeks,
+				Days:     tt.fields.Days,
+				Hours:    tt.fields.Hours,
+				Minutes:  tt.fields.Minutes,
+				Seconds:  tt.fields.Seconds,
+				Negative: tt.fields.Negative,
 			}
 			if got := duration.ToTimeDuration(); got != tt.want {
 				t.Errorf("ToTimeDuration() = %v, want %v", got, tt.want)
@@ -147,12 +244,21 @@ func TestDuration_String(t *testing.T) {
 		t.Errorf("expected: %s, got: %s", "P3Y6M4DT12H30M33.3333S", duration.String())
 	}
 
-	smolDuration, err := Parse("T0.0000000000001S")
+	smallDuration, err := Parse("T0.0000000000001S")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if smolDuration.String() != "T0.0000000000001S" {
-		t.Errorf("expected: %s, got: %s", "T0.0000000000001S", smolDuration.String())
+	if smallDuration.String() != "PT0.0000000000001S" {
+		t.Errorf("expected: %s, got: %s", "PT0.0000000000001S", smallDuration.String())
+	}
+
+	negativeDuration, err := Parse("-PT2H5M")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if negativeDuration.String() != "-PT2H5M" {
+		t.Errorf("expected: %s, got: %s", "-PT2H5M", negativeDuration.String())
 	}
 }
