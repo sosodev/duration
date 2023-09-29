@@ -2,6 +2,7 @@ package duration
 
 import (
 	"errors"
+	"fmt"
 	"math"
 	"strconv"
 	"time"
@@ -274,4 +275,27 @@ func (duration *Duration) String() string {
 	}
 
 	return d
+}
+
+func (duration *Duration) MarshalJSON() ([]byte, error) {
+	return []byte("\"" + duration.String() + "\""), nil
+}
+
+func (duration *Duration) UnmarshalJSON(source []byte) error {
+	strVal := string(source)
+	if len(strVal) < 2 {
+		return fmt.Errorf("invalid ISO 8601 duration: %s", strVal)
+	}
+	strVal = strVal[1 : len(strVal)-1]
+
+	if strVal == "null" {
+		return nil
+	}
+
+	parsed, err := Parse(strVal)
+	if err != nil {
+		return fmt.Errorf("invalid ISO 8601 duration: %s", strVal)
+	}
+	*duration = *parsed
+	return nil
 }
