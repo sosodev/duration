@@ -277,7 +277,7 @@ func (duration *Duration) String() string {
 	return d
 }
 
-func (duration *Duration) MarshalJSON() ([]byte, error) {
+func (duration Duration) MarshalJSON() ([]byte, error) {
 	return []byte("\"" + duration.String() + "\""), nil
 }
 
