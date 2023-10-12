@@ -1,6 +1,7 @@
 package duration
 
 import (
+	"encoding/json"
 	"reflect"
 	"testing"
 	"time"
@@ -260,5 +261,66 @@ func TestDuration_String(t *testing.T) {
 
 	if negativeDuration.String() != "-PT2H5M" {
 		t.Errorf("expected: %s, got: %s", "-PT2H5M", negativeDuration.String())
+	}
+}
+
+func TestDuration_MarshalJSON(t *testing.T) {
+	td, err := Parse("P3Y6M4DT12H30M5.5S")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	jsonVal, err := json.Marshal(struct {
+		Dur *Duration `json:"d"`
+	}{Dur: td})
+	if err != nil {
+		t.Errorf("did not expect error: %s", err.Error())
+	}
+	if string(jsonVal) != `{"d":"P3Y6M4DT12H30M5.5S"}` {
+		t.Errorf("expected: %s, got: %s", `{"d":"P3Y6M4DT12H30M5.5S"}`, string(jsonVal))
+	}
+
+	jsonVal, err = json.Marshal(struct {
+		Dur Duration `json:"d"`
+	}{Dur: *td})
+	if err != nil {
+		t.Errorf("did not expect error: %s", err.Error())
+	}
+	if string(jsonVal) != `{"d":"P3Y6M4DT12H30M5.5S"}` {
+		t.Errorf("expected: %s, got: %s", `{"d":"P3Y6M4DT12H30M5.5S"}`, string(jsonVal))
+	}
+}
+
+func TestDuration_UnmarshalJSON(t *testing.T) {
+	jsonStr := `
+		{
+			"d": "P3Y6M4DT12H30M5.5S"
+		}
+	`
+	expected, err := Parse("P3Y6M4DT12H30M5.5S")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var durStructPtr struct {
+		Dur *Duration `json:"d"`
+	}
+	err = json.Unmarshal([]byte(jsonStr), &durStructPtr)
+	if err != nil {
+		t.Errorf("did not expect error: %s", err.Error())
+	}
+	if !reflect.DeepEqual(durStructPtr.Dur, expected) {
+		t.Errorf("JSON Unmarshal ptr got = %s, want %s", durStructPtr.Dur, expected)
+	}
+
+	var durStruct struct {
+		Dur Duration `json:"d"`
+	}
+	err = json.Unmarshal([]byte(jsonStr), &durStruct)
+	if err != nil {
+		t.Errorf("did not expect error: %s", err.Error())
+	}
+	if !reflect.DeepEqual(durStruct.Dur, *expected) {
+		t.Errorf("JSON Unmarshal ptr got = %s, want %s", &(durStruct.Dur), expected)
 	}
 }
