@@ -49,7 +49,7 @@ var (
 // Parse attempts to parse the given duration string into a *Duration,
 // if parsing fails an error is returned instead
 func Parse(d string) (*Duration, error) {
-	if !strings.Contains(d, "P") {
+	if !strings.HasPrefix(d, "P") {
 		return nil, ErrUnexpectedInput
 	}
 
