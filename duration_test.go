@@ -18,6 +18,12 @@ func TestParse(t *testing.T) {
 		wantErr bool
 	}{
 		{
+			name:    "invalid-duration-1",
+			args:    args{d: "T0S"},
+			want:    nil,
+			wantErr: true,
+		},
+		{
 			name: "period-only",
 			args: args{d: "P4Y"},
 			want: &Duration{
@@ -27,7 +33,7 @@ func TestParse(t *testing.T) {
 		},
 		{
 			name: "time-only-decimal",
-			args: args{d: "T2.5S"},
+			args: args{d: "PT2.5S"},
 			want: &Duration{
 				Seconds: 2.5,
 			},
@@ -245,7 +251,7 @@ func TestDuration_String(t *testing.T) {
 		t.Errorf("expected: %s, got: %s", "P3Y6M4DT12H30M33.3333S", duration.String())
 	}
 
-	smallDuration, err := Parse("T0.0000000000001S")
+	smallDuration, err := Parse("PT0.0000000000001S")
 	if err != nil {
 		t.Fatal(err)
 	}
