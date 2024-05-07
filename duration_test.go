@@ -24,6 +24,18 @@ func TestParse(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name:    "invalid-duration-2",
+			args:    args{d: "P-T0S"},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name:    "invalid-duration-3",
+			args:    args{d: "PT0SP0D"},
+			want:    nil,
+			wantErr: true,
+		},
+		{
 			name: "period-only",
 			args: args{d: "P4Y"},
 			want: &Duration{
