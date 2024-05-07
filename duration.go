@@ -49,21 +49,26 @@ var (
 // Parse attempts to parse the given duration string into a *Duration,
 // if parsing fails an error is returned instead.
 func Parse(d string) (*Duration, error) {
-	if !strings.Contains(d, "P") {
-		return nil, ErrUnexpectedInput
-	}
-
 	state := parsingPeriod
 	duration := &Duration{}
 	num := ""
 	var err error
 
+	switch {
+	case strings.HasPrefix(d, "P"): // standard duration
+	case strings.HasPrefix(d, "-P"): // negative duration
+		duration.Negative = true
+		d = strings.TrimPrefix(d, "-") // remove the negative sign
+	default:
+		return nil, ErrUnexpectedInput
+	}
+
 	for _, char := range d {
 		switch char {
-		case '-':
-			duration.Negative = true
 		case 'P':
-			state = parsingPeriod
+			if state != parsingPeriod {
+				return nil, ErrUnexpectedInput
+			}
 		case 'T':
 			state = parsingTime
 		case 'Y':
