@@ -1,6 +1,7 @@
 package duration
 
 import (
+	"database/sql/driver"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -308,4 +309,28 @@ func (duration *Duration) UnmarshalJSON(source []byte) error {
 
 	*duration = *parsed
 	return nil
+}
+
+func (d *Duration) Scan(x interface{}) error {
+	switch v := x.(type) {
+	case []uint8:
+		parsed, err := Parse(string(v))
+		if err != nil {
+			return fmt.Errorf("failed to parse duration: %w", err)
+		}
+		d = parsed
+	case string:
+		parsed, err := Parse(v)
+		if err != nil {
+			return fmt.Errorf("failed to parse duration: %w", err)
+		}
+		d = parsed
+	default:
+		return fmt.Errorf("value must be a string")
+	}
+	return nil
+}
+
+func (d Duration) Value() (driver.Value, error) {
+	return d.String(), nil
 }
