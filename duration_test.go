@@ -342,3 +342,45 @@ func TestDuration_UnmarshalJSON(t *testing.T) {
 		t.Errorf("JSON Unmarshal ptr got = %s, want %s", &(durStruct.Dur), expected)
 	}
 }
+
+func TestDuration_MarshalText(t *testing.T) {
+	const orig = "P3Y6M4DT12H30M5.5S"
+	td, err := Parse(orig)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	text, err := td.MarshalText()
+	if err != nil {
+		t.Errorf("did not expect error: %s", err)
+	}
+	if string(text) != orig {
+		t.Errorf("expected: %s, got: %s", orig, text)
+	}
+}
+
+func TestDuration_UnmarshalText(t *testing.T) {
+	const orig = `P3Y6M4DT12H30M5.5S`
+	expected, err := Parse(orig)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var dur Duration
+	err = dur.UnmarshalText([]byte(orig))
+	if err != nil {
+		t.Errorf("did not expect error: %s", err.Error())
+	}
+	if !reflect.DeepEqual(dur, *expected) {
+		t.Errorf("Text Unmarshal ptr got = %s, want %s", &dur, expected)
+	}
+
+	dur = Duration{}
+	err = (&dur).UnmarshalText([]byte(orig))
+	if err != nil {
+		t.Errorf("did not expect error: %s", err)
+	}
+	if !reflect.DeepEqual(dur, *expected) {
+		t.Errorf("Text Unmarshal ptr got = %s, want %s", &dur, expected)
+	}
+}

@@ -309,3 +309,19 @@ func (duration *Duration) UnmarshalJSON(source []byte) error {
 	*duration = *parsed
 	return nil
 }
+
+// MarshalText implements [encoding.TextMarshaler].
+func (duration Duration) MarshalText() ([]byte, error) {
+	return []byte(duration.String()), nil
+}
+
+// UnmarshalText implements [encoding.TextUnmarshaler].
+func (duration *Duration) UnmarshalText(text []byte) error {
+	parsed, err := Parse(string(text))
+	if err != nil {
+		return fmt.Errorf("failed to parse duration: %w", err)
+	}
+
+	*duration = *parsed
+	return nil
+}
