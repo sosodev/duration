@@ -44,6 +44,8 @@ const (
 var (
 	// ErrUnexpectedInput is returned when an input in the duration string does not match expectations
 	ErrUnexpectedInput = errors.New("unexpected input")
+	// ErrIncompleteExpr is returned when the expression is incomplete, (e.g. missing unit).
+	ErrIncompleteExpr = errors.New("incomplete expression")
 )
 
 // Parse attempts to parse the given duration string into a *Duration,
@@ -143,6 +145,9 @@ func Parse(d string) (*Duration, error) {
 
 			return nil, ErrUnexpectedInput
 		}
+	}
+	if num != "" {
+		return nil, ErrIncompleteExpr
 	}
 
 	return duration, nil
