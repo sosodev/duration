@@ -230,6 +230,12 @@ func (duration *Duration) ToTimeDuration() time.Duration {
 	return timeDuration
 }
 
+// ToTimeDurationFrom returns the exact time.Duration by applying the duration to ref via
+// Shift and subtracting. Accurate for all units including Years and Months.
+func (duration *Duration) ToTimeDurationFrom(ref time.Time) time.Duration {
+	return duration.Shift(ref).Sub(ref)
+}
+
 // String returns the ISO8601 duration string for the *Duration
 func (duration *Duration) String() string {
 	d := "P"
@@ -282,6 +288,47 @@ func (duration *Duration) String() string {
 	}
 
 	return d
+}
+
+// Shift applies the duration to t using calendar arithmetic and returns the result.
+// Years and Months are applied with day-preservation clamping per ISO 8601: if the
+// resulting day would exceed the last day of the target month, it is clamped to that
+// last day (e.g. Jan 31 + 1M = Feb 28, not March 3).
+// Fractional Years/Months are truncated; fractional Weeks/Days carry into the ns offset.
+func (duration *Duration) Shift(t time.Time) time.Time {
+	sign := 1
+	if duration.Negative {
+		sign = -1
+	}
+
+	years := int(duration.Years) * sign
+	months := int(duration.Months) * sign
+
+	totalDays := duration.Weeks*7 + duration.Days
+	wholeDays := math.Trunc(totalDays)
+	fracDayNs := (totalDays - wholeDays) * float64(nsPerDay)
+
+	days := int(wholeDays) * sign
+
+	// Compute the intended target month before AddDate so overflow can be detected.
+	normTarget := time.Date(t.Year()+years, t.Month()+time.Month(months), 1, 0, 0, 0, 0, t.Location())
+
+	t = t.AddDate(years, months, days)
+
+	// Clamp per ISO 8601: if AddDate overflowed into the next month (i.e. no explicit
+	// day offset was requested), step back to the last day of the intended month.
+	if days == 0 && t.Month() != normTarget.Month() {
+		t = time.Date(t.Year(), t.Month(), 1, t.Hour(), t.Minute(), t.Second(), t.Nanosecond(), t.Location()).AddDate(0, 0, -1)
+	}
+
+	ns := fracDayNs +
+		duration.Hours*float64(nsPerHour) +
+		duration.Minutes*float64(nsPerMinute) +
+		duration.Seconds*float64(nsPerSecond)
+
+	t = t.Add(time.Duration(math.Round(ns)) * time.Duration(sign))
+
+	return t
 }
 
 // MarshalJSON satisfies the Marshaler interface by return a valid JSON string representation of the duration

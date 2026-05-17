@@ -429,3 +429,135 @@ func TestDuration_UnmarshalText(t *testing.T) {
 		t.Errorf("Text Unmarshal ptr got = %s, want %s", &dur, expected)
 	}
 }
+
+func TestShift(t *testing.T) {
+	var (
+		ref       = time.Date(2020, 3, 15, 10, 30, 0, 0, time.UTC)
+		jan31     = time.Date(2025, 1, 31, 0, 0, 0, 0, time.UTC)
+		feb292024 = time.Date(2024, 2, 29, 0, 0, 0, 0, time.UTC)
+	)
+
+	tests := []struct {
+		name string
+		d    *Duration
+		ref  time.Time
+		want time.Time
+	}{
+		{
+			name: "zero",
+			d:    &Duration{},
+			ref:  ref,
+			want: ref,
+		},
+		{
+			name: "1 month from Jan 31 clamps to Feb 28",
+			d:    &Duration{Months: 1},
+			ref:  jan31,
+			want: time.Date(2025, 2, 28, 0, 0, 0, 0, time.UTC),
+		},
+		{
+			name: "1 year from leap Feb 29 clamps to Feb 28",
+			d:    &Duration{Years: 1},
+			ref:  feb292024,
+			want: time.Date(2025, 2, 28, 0, 0, 0, 0, time.UTC),
+		},
+		{
+			name: "1 month from Jan 30 lands on Feb 28 (not clamped, day exists)",
+			d:    &Duration{Months: 1},
+			ref:  time.Date(2025, 1, 28, 0, 0, 0, 0, time.UTC),
+			want: time.Date(2025, 2, 28, 0, 0, 0, 0, time.UTC),
+		},
+		{
+			name: "full calendar duration",
+			d:    &Duration{Years: 1, Months: 2, Days: 3, Hours: 4, Minutes: 5, Seconds: 6},
+			ref:  ref,
+			want: time.Date(2021, 5, 18, 14, 35, 6, 0, time.UTC),
+		},
+		{
+			name: "negative shifts backward",
+			d:    &Duration{Hours: 2, Negative: true},
+			ref:  ref,
+			want: time.Date(2020, 3, 15, 8, 30, 0, 0, time.UTC),
+		},
+		{
+			name: "weeks and days and hours",
+			d:    &Duration{Weeks: 1, Days: 2, Hours: 3},
+			ref:  ref,
+			want: time.Date(2020, 3, 24, 13, 30, 0, 0, time.UTC),
+		},
+		{
+			name: "fractional weeks",
+			d:    &Duration{Weeks: 1.5},
+			ref:  ref,
+			want: time.Date(2020, 3, 25, 22, 30, 0, 0, time.UTC),
+		},
+		{
+			name: "45 days crosses month boundary",
+			d:    &Duration{Days: 45},
+			ref:  ref,
+			want: time.Date(2020, 4, 29, 10, 30, 0, 0, time.UTC),
+		},
+		{
+			name: "5 weeks crosses month boundary",
+			d:    &Duration{Weeks: 5},
+			ref:  ref,
+			want: time.Date(2020, 4, 19, 10, 30, 0, 0, time.UTC),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.d.Shift(tt.ref)
+			if !got.Equal(tt.want) {
+				t.Errorf("Shift() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestToTimeDurationFrom(t *testing.T) {
+	tests := []struct {
+		name string
+		d    *Duration
+		ref  time.Time
+		want time.Duration
+	}{
+		{
+			name: "1 month from March 1 is 31 days",
+			d:    &Duration{Months: 1},
+			ref:  time.Date(2025, 3, 1, 0, 0, 0, 0, time.UTC),
+			want: 31 * 24 * time.Hour,
+		},
+		{
+			name: "1 year from Jan 1 non-leap is 365 days",
+			d:    &Duration{Years: 1},
+			ref:  time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+			want: 365 * 24 * time.Hour,
+		},
+		{
+			name: "1 year from Jan 1 leap year is 366 days",
+			d:    &Duration{Years: 1},
+			ref:  time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+			want: 366 * 24 * time.Hour,
+		},
+		{
+			name: "negative 1 month from April 1 is -31 days",
+			d:    &Duration{Months: 1, Negative: true},
+			ref:  time.Date(2025, 4, 1, 0, 0, 0, 0, time.UTC),
+			want: -31 * 24 * time.Hour,
+		},
+		{
+			name: "sub-year duration matches ToTimeDuration",
+			d:    &Duration{Days: 3, Hours: 2},
+			ref:  time.Date(2025, 6, 1, 0, 0, 0, 0, time.UTC),
+			want: 3*24*time.Hour + 2*time.Hour,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.d.ToTimeDurationFrom(tt.ref)
+			if got != tt.want {
+				t.Errorf("ToTimeDurationFrom() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
