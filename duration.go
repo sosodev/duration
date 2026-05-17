@@ -153,9 +153,8 @@ func Parse(d string) (*Duration, error) {
 	return duration, nil
 }
 
-// FromTimeDuration converts the given time.Duration into duration.Duration.
-// Note that for *Duration's with period values of a month or year that the duration becomes a bit fuzzy
-// since obviously those things vary month to month and year to year.
+// FromTimeDuration converts a time.Duration into a *Duration using exact fixed-length
+// units (Weeks, Days, Hours, Minutes, Seconds). Never produces Years or Months.
 func FromTimeDuration(d time.Duration) *Duration {
 	duration := &Duration{}
 	if d == 0 {
@@ -167,28 +166,20 @@ func FromTimeDuration(d time.Duration) *Duration {
 		duration.Negative = true
 	}
 
-	if d.Hours() >= hoursPerYear {
-		duration.Years = math.Floor(d.Hours() / hoursPerYear)
-		d -= time.Duration(duration.Years) * nsPerYear
-	}
-	if d.Hours() >= hoursPerMonth {
-		duration.Months = math.Floor(d.Hours() / hoursPerMonth)
-		d -= time.Duration(duration.Months) * nsPerMonth
-	}
-	if d.Hours() >= hoursPerWeek {
-		duration.Weeks = math.Floor(d.Hours() / hoursPerWeek)
+	if d >= nsPerWeek {
+		duration.Weeks = float64(d / nsPerWeek)
 		d -= time.Duration(duration.Weeks) * nsPerWeek
 	}
-	if d.Hours() >= hoursPerDay {
-		duration.Days = math.Floor(d.Hours() / hoursPerDay)
+	if d >= nsPerDay {
+		duration.Days = float64(d / nsPerDay)
 		d -= time.Duration(duration.Days) * nsPerDay
 	}
-	if d.Hours() >= 1 {
-		duration.Hours = math.Floor(d.Hours())
+	if d >= nsPerHour {
+		duration.Hours = float64(d / nsPerHour)
 		d -= time.Duration(duration.Hours) * nsPerHour
 	}
-	if d.Minutes() >= 1 {
-		duration.Minutes = math.Floor(d.Minutes())
+	if d >= nsPerMinute {
+		duration.Minutes = float64(d / nsPerMinute)
 		d -= time.Duration(duration.Minutes) * nsPerMinute
 	}
 	duration.Seconds = d.Seconds()
@@ -196,17 +187,17 @@ func FromTimeDuration(d time.Duration) *Duration {
 	return duration
 }
 
-// Format formats the given time.Duration into an ISO 8601 duration string (e.g., P1DT6H5M),
-// negative durations are prefixed with a minus sign, for a zero duration "PT0S" is returned.
-// Note that for *Duration's with period values of a month or year that the duration becomes a bit fuzzy
-// since obviously those things vary month to month and year to year.
+// Format formats a time.Duration into an ISO 8601 string (e.g. P1DT6H5M).
+// Negative durations are prefixed with "-"; zero returns "PT0S".
+// Output never contains Years or Months; see FromTimeDuration.
 func Format(d time.Duration) string {
 	return FromTimeDuration(d).String()
 }
 
-// ToTimeDuration converts the *Duration to the standard library's time.Duration.
-// Note that for *Duration's with period values of a month or year that the duration becomes a bit fuzzy
-// since obviously those things vary month to month and year to year.
+// ToTimeDuration converts the *Duration to time.Duration.
+// Durations with Years or Months use fixed-length approximations and may be inexact.
+//
+// Deprecated: Use ToTimeDurationFrom for exact results when Years or Months are set.
 func (duration *Duration) ToTimeDuration() time.Duration {
 	var timeDuration time.Duration
 
@@ -237,6 +228,12 @@ func (duration *Duration) ToTimeDuration() time.Duration {
 	}
 
 	return timeDuration
+}
+
+// ToTimeDurationFrom returns the exact time.Duration by applying the duration to ref via
+// Shift and subtracting. Accurate for all units including Years and Months.
+func (duration *Duration) ToTimeDurationFrom(ref time.Time) time.Duration {
+	return duration.Shift(ref).Sub(ref)
 }
 
 // String returns the ISO8601 duration string for the *Duration
@@ -291,6 +288,47 @@ func (duration *Duration) String() string {
 	}
 
 	return d
+}
+
+// Shift applies the duration to t using calendar arithmetic and returns the result.
+// Years and Months are applied with day-preservation clamping per ISO 8601: if the
+// resulting day would exceed the last day of the target month, it is clamped to that
+// last day (e.g. Jan 31 + 1M = Feb 28, not March 3).
+// Fractional Years/Months are truncated; fractional Weeks/Days carry into the ns offset.
+func (duration *Duration) Shift(t time.Time) time.Time {
+	sign := 1
+	if duration.Negative {
+		sign = -1
+	}
+
+	years := int(duration.Years) * sign
+	months := int(duration.Months) * sign
+
+	totalDays := duration.Weeks*7 + duration.Days
+	wholeDays := math.Trunc(totalDays)
+	fracDayNs := (totalDays - wholeDays) * float64(nsPerDay)
+
+	days := int(wholeDays) * sign
+
+	// Compute the intended target month before AddDate so overflow can be detected.
+	normTarget := time.Date(t.Year()+years, t.Month()+time.Month(months), 1, 0, 0, 0, 0, t.Location())
+
+	t = t.AddDate(years, months, days)
+
+	// Clamp per ISO 8601: if AddDate overflowed into the next month (i.e. no explicit
+	// day offset was requested), step back to the last day of the intended month.
+	if days == 0 && t.Month() != normTarget.Month() {
+		t = time.Date(t.Year(), t.Month(), 1, t.Hour(), t.Minute(), t.Second(), t.Nanosecond(), t.Location()).AddDate(0, 0, -1)
+	}
+
+	ns := fracDayNs +
+		duration.Hours*float64(nsPerHour) +
+		duration.Minutes*float64(nsPerMinute) +
+		duration.Seconds*float64(nsPerSecond)
+
+	t = t.Add(time.Duration(math.Round(ns)) * time.Duration(sign))
+
+	return t
 }
 
 // MarshalJSON satisfies the Marshaler interface by return a valid JSON string representation of the duration
