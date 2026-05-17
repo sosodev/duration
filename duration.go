@@ -153,9 +153,8 @@ func Parse(d string) (*Duration, error) {
 	return duration, nil
 }
 
-// FromTimeDuration converts the given time.Duration into duration.Duration.
-// Note that for *Duration's with period values of a month or year that the duration becomes a bit fuzzy
-// since obviously those things vary month to month and year to year.
+// FromTimeDuration converts a time.Duration into a *Duration using exact fixed-length
+// units (Weeks, Days, Hours, Minutes, Seconds). Never produces Years or Months.
 func FromTimeDuration(d time.Duration) *Duration {
 	duration := &Duration{}
 	if d == 0 {
@@ -167,28 +166,20 @@ func FromTimeDuration(d time.Duration) *Duration {
 		duration.Negative = true
 	}
 
-	if d.Hours() >= hoursPerYear {
-		duration.Years = math.Floor(d.Hours() / hoursPerYear)
-		d -= time.Duration(duration.Years) * nsPerYear
-	}
-	if d.Hours() >= hoursPerMonth {
-		duration.Months = math.Floor(d.Hours() / hoursPerMonth)
-		d -= time.Duration(duration.Months) * nsPerMonth
-	}
-	if d.Hours() >= hoursPerWeek {
-		duration.Weeks = math.Floor(d.Hours() / hoursPerWeek)
+	if d >= nsPerWeek {
+		duration.Weeks = float64(d / nsPerWeek)
 		d -= time.Duration(duration.Weeks) * nsPerWeek
 	}
-	if d.Hours() >= hoursPerDay {
-		duration.Days = math.Floor(d.Hours() / hoursPerDay)
+	if d >= nsPerDay {
+		duration.Days = float64(d / nsPerDay)
 		d -= time.Duration(duration.Days) * nsPerDay
 	}
-	if d.Hours() >= 1 {
-		duration.Hours = math.Floor(d.Hours())
+	if d >= nsPerHour {
+		duration.Hours = float64(d / nsPerHour)
 		d -= time.Duration(duration.Hours) * nsPerHour
 	}
-	if d.Minutes() >= 1 {
-		duration.Minutes = math.Floor(d.Minutes())
+	if d >= nsPerMinute {
+		duration.Minutes = float64(d / nsPerMinute)
 		d -= time.Duration(duration.Minutes) * nsPerMinute
 	}
 	duration.Seconds = d.Seconds()
@@ -196,17 +187,17 @@ func FromTimeDuration(d time.Duration) *Duration {
 	return duration
 }
 
-// Format formats the given time.Duration into an ISO 8601 duration string (e.g., P1DT6H5M),
-// negative durations are prefixed with a minus sign, for a zero duration "PT0S" is returned.
-// Note that for *Duration's with period values of a month or year that the duration becomes a bit fuzzy
-// since obviously those things vary month to month and year to year.
+// Format formats a time.Duration into an ISO 8601 string (e.g. P1DT6H5M).
+// Negative durations are prefixed with "-"; zero returns "PT0S".
+// Output never contains Years or Months; see FromTimeDuration.
 func Format(d time.Duration) string {
 	return FromTimeDuration(d).String()
 }
 
-// ToTimeDuration converts the *Duration to the standard library's time.Duration.
-// Note that for *Duration's with period values of a month or year that the duration becomes a bit fuzzy
-// since obviously those things vary month to month and year to year.
+// ToTimeDuration converts the *Duration to time.Duration.
+// Durations with Years or Months use fixed-length approximations and may be inexact.
+//
+// Deprecated: Use ToTimeDurationFrom for exact results when Years or Months are set.
 func (duration *Duration) ToTimeDuration() time.Duration {
 	var timeDuration time.Duration
 

@@ -133,6 +133,29 @@ func TestFromTimeDuration(t *testing.T) {
 				Negative: true,
 			},
 		},
+		{
+			give: time.Hour * 24 * 7,
+			want: &Duration{
+				Weeks: 1,
+			},
+		},
+		{
+			give: time.Hour * 24 * 365,
+			want: &Duration{
+				Weeks: 52,
+				Days:  1,
+			},
+		},
+		{
+			give: time.Second * 465461651,
+			want: &Duration{
+				Weeks:   769,
+				Days:    4,
+				Hours:   6,
+				Minutes: 54,
+				Seconds: 11,
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.give.String(), func(t *testing.T) {
@@ -167,11 +190,11 @@ func TestFormat(t *testing.T) {
 		},
 		{
 			give: time.Second * 465461651,
-			want: "P14Y9M3DT12H54M11S",
+			want: "P769W4DT6H54M11S",
 		},
 		{
 			give: -time.Hour * 99544,
-			want: "-P11Y4M1W4D",
+			want: "-P592W3DT16H",
 		},
 		{
 			give: -time.Second * 10,

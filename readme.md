@@ -42,13 +42,33 @@ func main() {
 	}
 	
 	fmt.Println(d.ToTimeDuration() == time.Second*33+time.Millisecond*300) // true
+
+	// For durations with years or months, use Shift or ToTimeDurationFrom
+	// with a reference time to get exact calendar arithmetic.
+	ref := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+
+	d, err = duration.Parse("P1Y")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(d.Shift(ref))              // 2025-01-01 00:00:00 +0000 UTC
+	fmt.Println(d.ToTimeDurationFrom(ref)) // 8784h0m0s (366 days, 2024 is a leap year)
 }
 ```
 
 ## correctness
 
-This module aims to implement the ISO 8601 duration specification correctly. It properly supports fractional units and has unit tests
-that assert the correctness of it's parsing and conversion to a `time.Duration`.
+This module aims to implement the ISO 8601 duration specification correctly. It properly supports fractional units and has unit tests that assert the correctness of its parsing and conversions.
 
-With that said durations with months or years specified will be converted to `time.Duration` with a little fuzziness. Since I
-couldn't find a standard value, and they obviously vary, for those I used `2.628e+15` nanoseconds for a month and `3.154e+16` nanoseconds for a year.
+### `FromTimeDuration` and `Format`
+
+`FromTimeDuration` decomposes a `time.Duration` into exact fixed-length units only (Weeks, Days, Hours, Minutes, Seconds). It never produces Years or Months, since those are calendar-dependent and cannot be derived from a plain `time.Duration` without a reference point. `Format` delegates to `FromTimeDuration`.
+
+### `ToTimeDuration`
+
+`ToTimeDuration` is exact for all units except Years and Months, which are approximated using fixed-length values (365-day year, 365/12-day month). It is **deprecated** for use with durations that contain Years or Months — use `ToTimeDurationFrom` instead.
+
+### `Shift` and `ToTimeDurationFrom`
+
+For exact calendar arithmetic, use `Shift(ref time.Time) time.Time` or `ToTimeDurationFrom(ref time.Time) time.Duration`. Both implement the ISO 8601 day-preservation rule: if adding months would produce an invalid date, the day is clamped to the last valid day of the target month — for example, January 31 + 1 month = **February 28**, not March 3.
+
