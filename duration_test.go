@@ -102,6 +102,18 @@ func TestParse(t *testing.T) {
 			errorMatchFn: newMatchFn(ErrIncompleteExpr),
 		},
 		{
+			name:         "double P at start",
+			args:         args{d: "PP1D"},
+			want:         nil,
+			errorMatchFn: newMatchFn(ErrUnexpectedInput),
+		},
+		{
+			name:         "trailing P in period section",
+			args:         args{d: "P1DP"},
+			want:         nil,
+			errorMatchFn: newMatchFn(ErrUnexpectedInput),
+		},
+		{
 			name:         "double T",
 			args:         args{d: "PTT1H"},
 			want:         nil,
