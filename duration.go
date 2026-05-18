@@ -162,7 +162,7 @@ func Parse(d string) (*Duration, error) {
 		return nil, ErrIncompleteExpr
 	}
 	if state == parsingTime && rank > 3 {
-		return nil, ErrUnexpectedInput
+		return nil, ErrIncompleteExpr
 	}
 
 	return duration, nil

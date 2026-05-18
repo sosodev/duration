@@ -147,7 +147,7 @@ func TestParse(t *testing.T) {
 			name:         "bare PT with no time components",
 			args:         args{d: "PT"},
 			want:         nil,
-			errorMatchFn: newMatchFn(ErrUnexpectedInput),
+			errorMatchFn: newMatchFn(ErrIncompleteExpr),
 		},
 		{
 			name:         "T at end after valid time component",
