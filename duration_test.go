@@ -95,6 +95,72 @@ func TestParse(t *testing.T) {
 			want:         nil,
 			errorMatchFn: newMatchFn(ErrIncompleteExpr),
 		},
+		{
+			name:         "double T",
+			args:         args{d: "PTT1H"},
+			want:         nil,
+			errorMatchFn: newMatchFn(ErrUnexpectedInput),
+		},
+		{
+			name:         "T between time designators",
+			args:         args{d: "PT1HT1M"},
+			want:         nil,
+			errorMatchFn: newMatchFn(ErrUnexpectedInput),
+		},
+		{
+			name:         "duplicate H designator",
+			args:         args{d: "PT1H2H"},
+			want:         nil,
+			errorMatchFn: newMatchFn(ErrUnexpectedInput),
+		},
+		{
+			name:         "duplicate Y designator",
+			args:         args{d: "P1Y2Y"},
+			want:         nil,
+			errorMatchFn: newMatchFn(ErrUnexpectedInput),
+		},
+		{
+			name:         "duplicate M designator in period",
+			args:         args{d: "P1M2M"},
+			want:         nil,
+			errorMatchFn: newMatchFn(ErrUnexpectedInput),
+		},
+		{
+			name:         "duplicate M designator in time",
+			args:         args{d: "PT1M2M"},
+			want:         nil,
+			errorMatchFn: newMatchFn(ErrUnexpectedInput),
+		},
+		{
+			name:         "time designators out of order M before H",
+			args:         args{d: "PT1M1H"},
+			want:         nil,
+			errorMatchFn: newMatchFn(ErrUnexpectedInput),
+		},
+		{
+			name:         "period designators out of order D before Y",
+			args:         args{d: "P1D1Y"},
+			want:         nil,
+			errorMatchFn: newMatchFn(ErrUnexpectedInput),
+		},
+		{
+			name:         "bare PT with no time components",
+			args:         args{d: "PT"},
+			want:         nil,
+			errorMatchFn: newMatchFn(ErrUnexpectedInput),
+		},
+		{
+			name:         "T at end after valid time component",
+			args:         args{d: "PT2HT"},
+			want:         nil,
+			errorMatchFn: newMatchFn(ErrUnexpectedInput),
+		},
+		{
+			name:         "non-ASCII digit",
+			args:         args{d: "P٥Y"},
+			want:         nil,
+			errorMatchFn: newMatchFn(ErrUnexpectedInput),
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
