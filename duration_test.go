@@ -84,6 +84,12 @@ func TestParse(t *testing.T) {
 			errorMatchFn: noError,
 		},
 		{
+			name:         "bare P with no components",
+			args:         args{d: "P"},
+			want:         nil,
+			errorMatchFn: newMatchFn(ErrIncompleteExpr),
+		},
+		{
 			name:         "no unit after prefix P",
 			args:         args{d: "P6"},
 			want:         nil,
