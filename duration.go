@@ -161,6 +161,9 @@ func Parse(d string) (*Duration, error) {
 	if num != "" {
 		return nil, ErrIncompleteExpr
 	}
+	if state == parsingPeriod && rank == 8 {
+		return nil, ErrIncompleteExpr
+	}
 	if state == parsingTime && rank > 3 {
 		return nil, ErrIncompleteExpr
 	}
