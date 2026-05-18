@@ -60,19 +60,16 @@ func Parse(d string) (*Duration, error) {
 
 	switch {
 	case strings.HasPrefix(d, "P"): // standard duration
+		d = d[1:]
 	case strings.HasPrefix(d, "-P"): // negative duration
 		duration.Negative = true
-		d = strings.TrimPrefix(d, "-") // remove the negative sign
+		d = d[2:]
 	default:
 		return nil, ErrUnexpectedInput
 	}
 
 	for _, char := range d {
 		switch char {
-		case 'P':
-			if state != parsingPeriod {
-				return nil, ErrUnexpectedInput
-			}
 		case 'T':
 			if state == parsingTime || num != "" {
 				return nil, ErrUnexpectedInput
